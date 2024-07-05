@@ -45,7 +45,7 @@ void DataVector::testing()
 	{
 		for (int j = 0; j < data[i].size(); ++j)
 		{
-			std::cout << data[i][j];
+			std::cout << data[i][j] << " ";
 		}
 		std::cout << "\n";
 	}

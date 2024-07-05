@@ -7,5 +7,5 @@ private:
 public:
 	using Opening::Opening;
 	bool getIsOpen() { return isOpen; }
-	void toggleOpening();
+	void setOpening(bool isOpen);
 };

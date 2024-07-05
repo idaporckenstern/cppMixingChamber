@@ -18,4 +18,16 @@ Mesh::Mesh(double M, double N, double lengthX, double lengthY, double Re, double
 void Mesh::testing()
 {
 
+	std::cout << "U: \n";
+	uVelocity->testing();
+	std::cout << std::endl;
+	std::cout << "V: \n";
+	vVelocity->testing();
+	std::cout << std::endl;
+	std::cout << "Y: \n";
+	Y->testing();
+	std::cout << std::endl;
+	std::cout << "pressure: \n";
+	pressure->testing();
+	std::cout << std::endl;
 }

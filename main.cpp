@@ -35,8 +35,28 @@ int main()
     });
 
     Mesh mesh = Mesh(M, N, lengthX, lengthY, Re, Sc, t, tEnd, inlets, outlets);
+    
+    if (mesh.getT() < 10 || std::fmod(mesh.getT() - 10, 6) < 3)
+    {
+        outlets[0].setOpening(true);
+    }
+    else
+    {
+        outlets[0].setOpening(false);
+    }
+
+    if (mesh.getT() < 10 || std::fmod(mesh.getT() - 10, 6) >= 3)
+    {
+        outlets[1].setOpening(true);
+    }
+    else
+    {
+        outlets[1].setOpening(false);
+    }
+
     mesh.setBoundaryConditions(lambda, inletConditions);
     mesh.testing();
+    
 }
 
 

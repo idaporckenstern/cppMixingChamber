@@ -8,7 +8,7 @@ protected:
 	DataPoint endPoint;
 
 public:
-	Opening(DataPoint &startingPoint, DataPoint &endPoint);
+	Opening(DataPoint startingPoint, DataPoint endPoint);
 	DataPoint getStartingPoint();
 	DataPoint getEndPoint();
 

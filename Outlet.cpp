@@ -1,16 +1,9 @@
 #include "Outlet.h"
 
 
-void Outlet::toggleOpening()
+void Outlet::setOpening(bool isOpen)
 {
-	if (this->isOpen)
-	{
-		isOpen = false;
-	}
-	else
-	{
-		isOpen = true;
-	}
+	this->isOpen = isOpen;
 }
 
 
