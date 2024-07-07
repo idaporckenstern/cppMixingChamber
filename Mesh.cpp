@@ -47,9 +47,9 @@ void Mesh::testing()
 	//std::cout << "v2: \n";
 	//v2->testing();
 	std::cout << std::endl;
-	std::cout << "Y: \n";
-	Y->testing();
-	std::cout << std::endl;
+	//std::cout << "Y: \n";
+	//Y->testing();
+	//std::cout << std::endl;
 	//std::cout << "Y2: \n";
 	//Y2->testing();
 	std::cout << std::endl;
@@ -123,27 +123,6 @@ double Mesh::min(double a, double b)
 	return b;
 }
 
-double Mesh::sumX(std::vector<std::vector<double>>& data, int column, int start, int end)
-{
-	double sum = 0;
-	for (int i = start; i < end; ++i)
-	{
-		sum += data[i][column];
-	}
-	return sum;
-}
-
-double Mesh::sumY(std::vector<std::vector<double>>& data, int row, int start, int end)
-{
-	double sum = 0;
-	for (int j = start; j < end; ++j)
-	{
-		sum += data[row][j];
-	}
-
-	return sum;
-}
-
 void Mesh::stepForward()
 {
 	//solving for u^n+1
@@ -195,5 +174,35 @@ void Mesh::correctVelocities()
 
 void Mesh::conservationMassCorrection()
 {
+	double volumeFlow = this->uVelocity->sumY(0, 1, this->N + 1) * this->h - this->uVelocity->sumY(this->M, 1, this->N + 1) * this->h + this->vVelocity->sumX(0, 1, this->M + 1) * this->h - this->vVelocity->sumX(this->N, 1, this->M + 1) * this->h;
 
+	double outletsOpen = 0;
+	double openRatio;
+	for (int i = 0; i < this->outlets.size(); ++i)
+	{
+		if (outlets[i].getIsOpen())
+		{
+			++outletsOpen;
+		}	
+	}
+	openRatio = outletsOpen / outlets.size();
+	double velocityCorrection = volumeFlow / openRatio;
+
+	for (int i = 0; i < this->M + 1; ++i)
+	{
+		for (int k = 0; k < outlets.size(); ++k)
+		{
+			if ((this->vVelocity->getXPoint(i) >= outlets[k].getStartingPoint().x) && (this->vVelocity->getXPoint(i) <= outlets[k].getEndPoint().x) && outlets[k].getIsOpen())
+			{
+				if (outlets[k].getStartingPoint().y == 0)
+				{
+					this->vVelocity->setData(this->vVelocity->getData(i, 0) - velocityCorrection, i, 0);
+				}
+				else
+				{
+					this->vVelocity->setData(this->vVelocity->getData(i, this->N) + velocityCorrection , i, N);
+				}
+			}
+		}
+	}
 }

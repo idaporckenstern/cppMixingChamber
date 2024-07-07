@@ -62,6 +62,27 @@ double DataVector::absoluteMax()
 	return max;
 }
 
+double DataVector::sumX(int column, int start, int end)
+{
+	double sum = 0;
+	for (int i = start; i < end; ++i)
+	{
+		sum += this->data[i][column];
+	}
+	return sum;
+}
+
+double DataVector::sumY(int row, int start, int end)
+{
+	double sum = 0;
+	for (int j = start; j < end; ++j)
+	{
+		sum += this->data[row][j];
+	}
+
+	return sum;
+}
+
 void DataVector::testing()
 {
 	for (int i = 0; i < data.size(); ++i)

@@ -22,5 +22,7 @@ public:
 	double getYPoint(int j);
 	std::vector<std::vector<double>> getData() { return data; }
 	double absoluteMax();
+	double sumX(int column, int start, int end);
+	double sumY(int row, int start, int end);
 	void testing();
 };

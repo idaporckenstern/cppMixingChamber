@@ -59,8 +59,7 @@ public:
 	double getDT(double CFL);
 	double absoluteMax(std::vector<std::vector<double>> &vector);
 	double min(double a, double b);
-	double sumX(std::vector<std::vector<double>>& data, int column, int start, int end);
-	double sumY(std::vector<std::vector<double>>& data, int row, int start, int end);
+	
 
 	void stepForward();
 	void correctVelocities();
@@ -75,11 +74,11 @@ public:
 			this->uVelocity->setData(-uVelocity->getData(i, 1), i, 0);
 			this->uVelocity->setData(-uVelocity->getData(i, this->N), i, this->N + 1);
 
-			for (Outlet outlet : outlets)
+			for (int k = 0; k < outlets.size(); ++k)
 			{
-				if ((this->uVelocity->getXPoint(i) >= outlet.getStartingPoint().x) && (this->uVelocity->getXPoint(i) <= outlet.getEndPoint().x) && outlet.getIsOpen())
+				if ((this->uVelocity->getXPoint(i) >= outlets[k].getStartingPoint().x) && (this->uVelocity->getXPoint(i) <= outlets[k].getEndPoint().x) && outlets[k].getIsOpen())
 				{
-					if (outlet.getStartingPoint().y == 0)
+					if (outlets[k].getStartingPoint().y == 0)
 					{
 						this->uVelocity->setData(this->uVelocity->getData(i, 1), i, 0);
 					}
@@ -117,11 +116,11 @@ public:
 			this->vVelocity->setData(0, i, 0);
 			this->vVelocity->setData(0, i, N);
 
-			for (Outlet outlet : this->outlets)
+			for (int k = 0; k < outlets.size(); ++k)
 			{
-				if ((this->vVelocity->getXPoint(i) >= outlet.getStartingPoint().x) && (this->vVelocity->getXPoint(i) <= outlet.getEndPoint().x) && outlet.getIsOpen())
+				if ((this->vVelocity->getXPoint(i) >= outlets[k].getStartingPoint().x) && (this->vVelocity->getXPoint(i) <= outlets[k].getEndPoint().x) && outlets[k].getIsOpen())
 				{
-					if (outlet.getStartingPoint().y == 0)
+					if (outlets[k].getStartingPoint().y == 0)
 					{
 						this->vVelocity->setData((4 * this->vVelocity->getData(i, 1) - this->vVelocity->getData(i, 2)) / 3, i, 0);
 					}

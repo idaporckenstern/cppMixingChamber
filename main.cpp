@@ -64,6 +64,7 @@ int main()
         double dt = mesh.getDT(CFL);
         mesh.stepForward();
         mesh.setBoundaryConditions(lambda, inletConditions, mesh.getT() + mesh.getDT(CFL));
+        mesh.correctVelocities();
         mesh.testing();
         mesh.setT(mesh.getT() + dt);
     }
