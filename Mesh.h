@@ -12,6 +12,7 @@ class Mesh
 private:
 	//initial variables
 	double t;
+	double dt;
 	double tEnd;
 	double M; //amount of points in the mesh on the x direction
 	double N; //amount of points in the mesh on the y direction
@@ -31,11 +32,16 @@ private:
 	std::unique_ptr<DataVector> vVelocity;
 	std::unique_ptr<DataVector> Y;
 	std::unique_ptr<DataVector> pressure;
+	std::unique_ptr<DataVector> R;
 
 	//double data for FTCS
-	std::unique_ptr<std::vector<double>> u2;
-	std::unique_ptr<std::vector<double>> v2;
-	std::unique_ptr<std::vector<double>> Y2;
+	std::unique_ptr<DataVector> u2;
+	std::unique_ptr<DataVector> v2;
+	std::unique_ptr<DataVector> Y2;
+
+	//vectors to find dt
+	std::vector<std::vector<double>> uHat;
+	std::vector<std::vector<double>> vHat;
 
 public:
 	Mesh(double M, double N, double lengthX, double lengthY, double Re, double Sc, double t, double tEnd, std::vector<Opening>& inlets, std::vector<Outlet>& outlets);
@@ -43,9 +49,25 @@ public:
 
 	double getT() { return this->t; }
 	double getTEnd() { return this->tEnd; }
+	double getM() { return this->M; }
+	double getN() { return this->N; }
+	double getH() { return this->h; }
+	double getUData(int i, int j) { return this->uVelocity->getData(i, j); }
+	double getVData(int i, int j) { return this->vVelocity->getData(i, j); }
+	void setT(double t) { this->t = t; }
+
+	double getDT(double CFL);
+	double absoluteMax(std::vector<std::vector<double>> &vector);
+	double min(double a, double b);
+	double sumX(std::vector<std::vector<double>>& data, int column, int start, int end);
+	double sumY(std::vector<std::vector<double>>& data, int row, int start, int end);
+
+	void stepForward();
+	void correctVelocities();
+	void conservationMassCorrection();
 
 	template<typename T>
-	void setBoundaryConditions(T lambda, std::vector<double>& inletConstants)
+	void setBoundaryConditions(T lambda, std::vector<double>& inletConstants, double t)
 	{
 		//the first two i and j loops set the boundary conditions for u
 		for (int i = 0; i < this->M + 1; ++i)
@@ -148,7 +170,7 @@ public:
 
 		//the next two sets of loops set up the boundary conditions for Y
 		int fY;
-		if (std::fmod(this->t, 10) < 5)
+		if (std::fmod(t, 10) < 5)
 		{
 			fY = 1;
 		}

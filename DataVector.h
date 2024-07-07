@@ -1,5 +1,7 @@
 #pragma once
 #include <vector>
+#include <cmath>
+#include "Functions.h"
 
 class DataVector
 {
@@ -14,8 +16,11 @@ public:
 	void initDataVector();
 
 	void setData(double dataPoint, int i, int j);
+	void replaceDataVector(std::vector<std::vector<double>> data);
 	double getData(int i, int j);
 	double getXPoint(int i);
 	double getYPoint(int j);
+	std::vector<std::vector<double>> getData() { return data; }
+	double absoluteMax();
 	void testing();
 };

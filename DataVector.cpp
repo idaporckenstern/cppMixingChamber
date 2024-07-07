@@ -24,6 +24,11 @@ void DataVector::setData(double dataPoint, int i, int j)
 	this->data[i][j] = dataPoint;
 }
 
+void DataVector::replaceDataVector(std::vector<std::vector<double>> data)
+{
+	this->data = data;
+}
+
 double DataVector::getData(int i, int j)
 {
 	return this->data[i][j];
@@ -37,6 +42,24 @@ double DataVector::getXPoint(int i)
 double DataVector::getYPoint(int j)
 {
 	return this->yVector[j];
+}
+
+double DataVector::absoluteMax()
+{
+	double max = 0.0;
+
+	for (int i = 0; i < this->data.size(); ++i)
+	{
+		for (int j = 0; j < this->data[0].size(); ++j)
+		{
+			if (max < std::abs(this->data[i][j]))
+			{
+				
+				max = std::abs(this->data[i][j]);
+			}
+		}
+	}
+	return max;
 }
 
 void DataVector::testing()

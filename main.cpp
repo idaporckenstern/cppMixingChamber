@@ -16,6 +16,7 @@ int main()
     double Sc = 20;
     double t = 0;
     double tEnd = 25;
+    double CFL = 0.8;
 
     auto lambda = [](double z, double L)
         {
@@ -54,8 +55,21 @@ int main()
         outlets[1].setOpening(false);
     }
 
-    mesh.setBoundaryConditions(lambda, inletConditions);
-    mesh.testing();
+    mesh.setBoundaryConditions(lambda, inletConditions, mesh.getT());
+
+    
+
+    while (mesh.getT() < mesh.getTEnd())
+    {
+        double dt = mesh.getDT(CFL);
+        mesh.stepForward();
+        mesh.setBoundaryConditions(lambda, inletConditions, mesh.getT() + mesh.getDT(CFL));
+        mesh.testing();
+        mesh.setT(mesh.getT() + dt);
+    }
+
+
+    
     
 }
 
