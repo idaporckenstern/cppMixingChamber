@@ -6,6 +6,7 @@
 #include "Outlet.h"
 #include <iostream>
 #include <cmath>
+#include<iterator>
 
 class Mesh
 {
@@ -43,6 +44,9 @@ private:
 	std::vector<std::vector<double>> uHat;
 	std::vector<std::vector<double>> vHat;
 
+	//right hand side of the pressure equation
+	std::unique_ptr<DataVector> pressureRightHandSide;
+
 public:
 	Mesh(double M, double N, double lengthX, double lengthY, double Re, double Sc, double t, double tEnd, std::vector<Opening>& inlets, std::vector<Outlet>& outlets);
 	void testing();
@@ -54,9 +58,10 @@ public:
 	double getH() { return this->h; }
 	double getUData(int i, int j) { return this->uVelocity->getData(i, j); }
 	double getVData(int i, int j) { return this->vVelocity->getData(i, j); }
+	double getDT() { return this->dt; }
 	void setT(double t) { this->t = t; }
 
-	double getDT(double CFL);
+	double solveDT(double CFL);
 	double absoluteMax(std::vector<std::vector<double>> &vector);
 	double min(double a, double b);
 	
@@ -64,6 +69,15 @@ public:
 	void stepForward();
 	void correctVelocities();
 	void conservationMassCorrection();
+	void solvePressure();
+	std::vector<std::vector<double>> poissonSolver(int maxIterations, double epsilon);
+	std::vector<std::vector<double>> multiGridSolver(std::vector<std::vector<double>> &phi, std::vector<std::vector<double>> &rightHandSide, double h);
+	std::vector<std::vector<double>> centerGS(std::vector<std::vector<double>> &phi, std::vector<std::vector<double>> &rightHandSide, double h, int numIterations);
+	std::vector<std::vector<double>> centerResidual(std::vector<std::vector<double>> &phi, std::vector<std::vector<double>> &rightHandSide, double h);
+	std::vector<std::vector<double>> centerRestrictCells(std::vector<std::vector<double>> &vector);
+	std::vector<std::vector<double>> centerProlongCells(std::vector<std::vector<double>> &vector);
+	std::vector<std::vector<double>> addVectors(std::vector<std::vector<double>> &vector1, std::vector<std::vector<double>> &vector2);
+	void setGSBoundaryConditions(std::vector<std::vector<double>> &phi);
 
 	template<typename T>
 	void setBoundaryConditions(T lambda, std::vector<double>& inletConstants, double t)

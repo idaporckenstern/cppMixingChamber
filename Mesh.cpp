@@ -10,6 +10,7 @@ Mesh::Mesh(double M, double N, double lengthX, double lengthY, double Re, double
 	Y2(std::make_unique<DataVector>(linspace(0 - h / 2, lengthX + h / 2, M + 2), linspace(0.0 - h / 2.0, lengthY + h / 2.0, N + 2))),
 	pressure(std::make_unique<DataVector>(linspace(0 - h / 2, lengthX + h / 2, M + 2), linspace(0.0 - h / 2.0, lengthY + h / 2.0, N + 2))),
 	R(std::make_unique<DataVector>(linspace(0 - h / 2, lengthX + h / 2, M + 2), linspace(0.0 - h / 2.0, lengthY + h / 2.0, N + 2))),
+	pressureRightHandSide(std::make_unique<DataVector>(linspace(0 - h / 2, lengthX + h / 2, M + 2), linspace(0.0 - h / 2.0, lengthY + h / 2.0, N + 2))),
 	inlets(inlets), outlets(outlets)
 
 {
@@ -21,6 +22,7 @@ Mesh::Mesh(double M, double N, double lengthX, double lengthY, double Re, double
 	Y2->initDataVector();
 	pressure->initDataVector();
 	R->initDataVector();
+	pressureRightHandSide->initDataVector();
 
 	this->uHat.resize(this->M);
 	for (int i = 0; i < this->N; ++i)
@@ -37,6 +39,7 @@ Mesh::Mesh(double M, double N, double lengthX, double lengthY, double Re, double
 
 void Mesh::testing()
 {
+	
 	//std::cout << "U2: \n";
 	//u2->testing();
 	std::cout << "U: \n";
@@ -52,15 +55,19 @@ void Mesh::testing()
 	//std::cout << std::endl;
 	//std::cout << "Y2: \n";
 	//Y2->testing();
-	std::cout << std::endl;
+	//std::cout << std::endl;
 	std::cout << "pressure: \n";
 	pressure->testing();
 	std::cout << std::endl;
+	//std::cout << "pressure rhs: \n";
+	//pressureRightHandSide->testing();
+	//std::cout << std::endl;
+	//*/
 
-	
+	//std::cout << this->pressure->getData(1, 1);
 }
 
-double Mesh::getDT(double CFL)
+double Mesh::solveDT(double CFL)
 {
 	double dtU = 0.0;
 	double dtV = 0.0;
@@ -84,7 +91,6 @@ double Mesh::getDT(double CFL)
 			{
 				this->vHat[i - 1][j] = (this->vVelocity->getData(i, j) + this->vVelocity->getData(i, j + 1)) / 2;
 			}
-			std::cout << "\n";
 		}
 	}
 
@@ -170,6 +176,7 @@ void Mesh::stepForward()
 void Mesh::correctVelocities()
 {
 	conservationMassCorrection();
+	solvePressure();
 }
 
 void Mesh::conservationMassCorrection()
@@ -204,5 +211,199 @@ void Mesh::conservationMassCorrection()
 				}
 			}
 		}
+	}
+}
+
+void Mesh::solvePressure()
+{
+	for (int j = 1; j < this->N + 1; ++j)
+	{
+		for (int i = 1; i < this->M + 1; ++i)
+		{
+			this->pressureRightHandSide->setData(1 / this->dt * ((this->uVelocity->getData(i, j) - this->uVelocity->getData(i - 1, j)) / this->h + (this->vVelocity->getData(i, j) - this->vVelocity->getData(i, j - 1)) / this->h), i, j);
+		}
+	}
+
+	this->pressure->replaceDataVector(this->poissonSolver(100, 0.0000000001));
+
+}
+
+std::vector<std::vector<double>> Mesh::poissonSolver(int maxIterations, double epsilon)
+{
+	std::vector<std::vector<double>> residualVector;
+	double r = 1 + epsilon;
+	int counter = 0;
+
+	std::vector<std::vector<double>> rightHandSide;
+	std::vector<std::vector<double>> phi;
+
+	phi = this->pressure->getData();
+	rightHandSide = this->pressureRightHandSide->getData();
+
+	while (counter < maxIterations && r > epsilon)
+	{
+		phi = multiGridSolver(phi, rightHandSide, this->h);
+		residualVector = this->centerResidual(phi, rightHandSide, this->h);
+		r = this->absoluteMax(residualVector);
+		++counter;
+	}
+	return phi;
+}
+
+std::vector<std::vector<double>> Mesh::multiGridSolver(std::vector<std::vector<double>> &phi, std::vector<std::vector<double>> &rightHandSide, double h)
+{
+	double M = phi.size() - 2;
+	double N = phi[0].size() - 2;
+	std::vector<std::vector<double>> rightHandSideTemp;
+	std::vector<std::vector<double>> phiTemp;
+
+	phi = centerGS(phi, rightHandSide,h, 1);
+
+	if (std::fmod(M, 2.0) == 0 && std::fmod(N, 2.0) == 0)
+	{
+		phiTemp.resize(M / 2 + 2);
+		for (int i = 0; i < M / 2 + 2; ++i)
+		{
+			phiTemp[i].resize(N / 2 + 2);
+		}
+
+		rightHandSideTemp = this->centerResidual(phi, rightHandSide, h);
+		rightHandSideTemp = this->centerRestrictCells(rightHandSideTemp);
+		phiTemp = this->multiGridSolver(phiTemp, rightHandSideTemp, 2 * h);
+		phiTemp = this->centerProlongCells(phiTemp);
+		phi = this->addVectors(phi, phiTemp);
+		this->setGSBoundaryConditions(phi);
+		phi = this->centerGS(phi, rightHandSide, h, 1);
+	}
+
+	return phi;
+}
+
+std::vector<std::vector<double>> Mesh::centerGS(std::vector<std::vector<double>> &phi, std::vector<std::vector<double>> &rightHandSide, double h, int numIterations)
+{
+	double M = phi.size() - 2;
+	double N = phi[0].size() - 2;
+	this->setGSBoundaryConditions(phi);
+
+	for (int k = 0; k < numIterations; ++k)
+	{
+		for (int j = 1; j < N + 1; ++j)
+		{
+			for (int i = 1; i < M + 1; ++i)
+			{
+				phi[i][j] = 0.25 * (phi[i - 1][j] + phi[i + 1][j] + phi[i][j - 1] + phi[i][j + 1]) - .25 * std::pow(h, 2) * rightHandSide[i][j];
+			}
+		}
+		this->setGSBoundaryConditions(phi);
+	}
+
+	return phi;
+}
+
+std::vector<std::vector<double>> Mesh::centerResidual(std::vector<std::vector<double>> &phi, std::vector<std::vector<double>> &rightHandSide, double h)
+{
+
+	double M = phi.size() - 2;
+	double N = phi[0].size() - 2;
+	std::vector<std::vector<double>> residual;
+	residual.resize(M + 2);
+	for (int i = 0; i < M + 2; ++i)
+	{
+		residual[i].resize(N + 2);
+	}
+
+	for (int j = 1; j < N + 1; ++j)
+	{
+		for (int i = 1; i < M + 1; ++i)
+		{
+			residual[i][j] = rightHandSide[i][j] - ((phi[i - 1][j] - 2 * phi[i][j] + phi[i + 1][j]) / std::pow(h, 2) + (phi[i][j - 1] - 2 * phi[i][j] + phi[i][j + 1]) / std::pow(h, 2));
+		}
+	}
+
+	return residual;
+}
+
+std::vector<std::vector<double>> Mesh::centerRestrictCells(std::vector<std::vector<double>> &vector)
+{
+	double M = vector.size() / 2 - 1;
+	double N = vector[0].size() / 2 - 1;
+	std::vector<std::vector<double>> restrictedVector;
+	restrictedVector.resize(M + 2);
+	for (int i = 0; i < M + 2; ++i)
+	{
+		restrictedVector[i].resize(N + 2);
+	}
+
+	for (int j = 1; j < N + 1; ++j)
+	{
+		for (int i = 1; i < M + 1; ++i)
+		{
+			restrictedVector[i][j] = 1.0 / 4.0 * (vector[2 * i - 2 + 1][2 * j - 2 + 1] + vector[2 * i - 1 + 1][2 * j - 2 + 1] + vector[2 * i - 2 + 1][2 * j - 1 + 1] + vector[2 * i - 1 + 1][2 * j - 1 + 1]);
+		}
+	}
+	this->setGSBoundaryConditions(restrictedVector);
+
+	return restrictedVector;
+}
+
+std::vector<std::vector<double>> Mesh::centerProlongCells(std::vector<std::vector<double>> &vector)
+{
+	double M = vector.size() - 2;
+	double N = vector[0].size() - 2;
+	std::vector<std::vector<double>> prolongedVector;
+	prolongedVector.resize(2 * M + 2);
+	for (int i = 0; i < 2 * M + 2; ++i)
+	{
+		prolongedVector[i].resize(2 * N + 2);
+	}
+
+	for (int j = 1; j < N + 1; ++j)
+	{
+		for (int i = 1; i < M + 1; ++i)
+		{
+			
+			prolongedVector[2 * i - 2 + 1][2 * j - 2 + 1] = vector[i][j];
+			prolongedVector[2 * i - 1 + 1][2 * j - 2 + 1] = vector[i][j];
+			prolongedVector[2 * i - 2 + 1][2 * j - 1 + 1] = vector[i][j];
+			prolongedVector[2 * i - 1 + 1][2 * j - 1 + 1] = vector[i][j];
+		}
+	}
+
+	this->setGSBoundaryConditions(prolongedVector);
+
+	return prolongedVector;
+}
+
+std::vector<std::vector<double>> Mesh::addVectors(std::vector<std::vector<double>> &vector1, std::vector<std::vector<double>> &vector2)
+{
+	if (vector1.size() != vector2.size() || vector1[0].size() != vector2[0].size()) 
+	{
+		throw std::invalid_argument("Vectors must be of the same size");
+	}
+	
+	for (int j = 0; j < vector1.size(); ++j)
+	{
+		for (int i = 0; i < vector1[0].size(); ++i)
+		{
+			vector1[i][j] += vector2[i][j];
+		}
+	}
+	return vector1;
+}
+
+void Mesh::setGSBoundaryConditions(std::vector<std::vector<double>> &phi)
+{
+	double M = phi.size() - 2;
+	double N = phi[0].size() - 2;
+
+	for (int j = 0; j < N + 2; ++j)
+	{
+		phi[M + 1][j] = phi[M][j];
+		phi[0][j] = phi[1][j];
+	}
+	for (int i = 0; i < M + 2; ++i)
+	{
+		phi[i][0] = phi[i][1];
+		phi[i][N + 1] = phi[i][N];
 	}
 }

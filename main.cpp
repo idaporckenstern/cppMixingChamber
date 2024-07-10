@@ -13,7 +13,7 @@ int main()
     double lengthX = 4;
     double lengthY = 4;
     double Re = 40;
-    double Sc = 20;
+    double Sc = 2;
     double t = 0;
     double tEnd = 25;
     double CFL = 0.8;
@@ -59,15 +59,15 @@ int main()
 
     
 
-    while (mesh.getT() < mesh.getTEnd())
-    {
-        double dt = mesh.getDT(CFL);
+    //while (mesh.getT() < mesh.getTEnd())
+    //{
+        double dt = mesh.solveDT(CFL);
         mesh.stepForward();
-        mesh.setBoundaryConditions(lambda, inletConditions, mesh.getT() + mesh.getDT(CFL));
+        mesh.setBoundaryConditions(lambda, inletConditions, mesh.getT() + mesh.getDT());
         mesh.correctVelocities();
         mesh.testing();
         mesh.setT(mesh.getT() + dt);
-    }
+    //}
 
 
     
