@@ -5,6 +5,7 @@
 #include "Opening.h"
 #include "Outlet.h"
 #include <cmath>
+#include <cstdlib>
 
 int main()
 {
@@ -17,6 +18,8 @@ int main()
     double t = 0;
     double tEnd = 25;
     double CFL = 0.8;
+
+    int plotTimes[6] = { 2, 5, 10, 15, 20, 24 };
 
     auto lambda = [](double z, double L)
         {
@@ -55,21 +58,55 @@ int main()
         outlets[1].setOpening(false);
     }
 
-    mesh.setBoundaryConditions(lambda, inletConditions, mesh.getT());
+    mesh.setBoundaryConditionsU(lambda, inletConditions, mesh.getT());
+    mesh.setBoundaryConditionsV(lambda, inletConditions, mesh.getT());
+    mesh.setBoundaryConditionsY(lambda, inletConditions, mesh.getT());
 
     
-
-    //while (mesh.getT() < mesh.getTEnd())
-    //{
+    int plotCount = 0;
+    while (mesh.getT() < mesh.getTEnd())
+    {
         double dt = mesh.solveDT(CFL);
+        if ((mesh.getT() < plotTimes[plotCount]) && (mesh.getT() + dt > plotTimes[plotCount]))
+        {
+            dt = plotTimes[plotCount] - mesh.getT();
+            ++plotCount;
+            mesh.setDoPlot(true);
+        }
+
         mesh.stepForward();
-        mesh.setBoundaryConditions(lambda, inletConditions, mesh.getT() + mesh.getDT());
+
+        //check if outlets are open or closed
+        if (mesh.getT() < 10 || std::fmod(mesh.getT() - 10, 6) < 3)
+        {
+            outlets[0].setOpening(true);
+        }
+        else
+        {
+            outlets[0].setOpening(false);
+        }
+
+        if (mesh.getT() < 10 || std::fmod(mesh.getT() - 10, 6) >= 3)
+        {
+            outlets[1].setOpening(true);
+        }
+        else
+        {
+            outlets[1].setOpening(false);
+        }
+
+        mesh.setBoundaryConditionsU(lambda, inletConditions, mesh.getT() + dt);
+        mesh.setBoundaryConditionsV(lambda, inletConditions, mesh.getT() + dt);
+        mesh.setBoundaryConditionsY(lambda, inletConditions, mesh.getT() + dt);
         mesh.correctVelocities();
-        mesh.testing();
+        mesh.setBoundaryConditionsU(lambda, inletConditions, mesh.getT());
+        mesh.setBoundaryConditionsV(lambda, inletConditions, mesh.getT());
         mesh.setT(mesh.getT() + dt);
-    //}
+        std::cout << mesh.getT() << std::endl;
+        
+    }
 
-
+    mesh.testing();
     
     
 }

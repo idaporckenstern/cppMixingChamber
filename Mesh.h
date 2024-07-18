@@ -22,6 +22,7 @@ private:
 	double h;
 	double Re;
 	double Sc;
+	bool doPlot = false;
 
 	//inlets and outlets
 	std::vector<Opening> inlets;
@@ -60,6 +61,7 @@ public:
 	double getVData(int i, int j) { return this->vVelocity->getData(i, j); }
 	double getDT() { return this->dt; }
 	void setT(double t) { this->t = t; }
+	void setDoPlot(bool doPlot) { this->doPlot = doPlot; }
 
 	double solveDT(double CFL);
 	double absoluteMax(std::vector<std::vector<double>> &vector);
@@ -80,13 +82,13 @@ public:
 	void setGSBoundaryConditions(std::vector<std::vector<double>> &phi);
 
 	template<typename T>
-	void setBoundaryConditions(T lambda, std::vector<double>& inletConstants, double t)
+	void setBoundaryConditionsU(T lambda, std::vector<double>& inletConstants, double t)
 	{
 		//the first two i and j loops set the boundary conditions for u
 		for (int i = 0; i < this->M + 1; ++i)
 		{
-			this->uVelocity->setData(-uVelocity->getData(i, 1), i, 0);
-			this->uVelocity->setData(-uVelocity->getData(i, this->N), i, this->N + 1);
+			this->uVelocity->setData(-uVelocity->getData(i, 0), i, 1);
+			this->uVelocity->setData(-uVelocity->getData(i, this->N + 1), i, this->N);
 
 			for (int k = 0; k < outlets.size(); ++k)
 			{
@@ -111,18 +113,23 @@ public:
 
 			for (int k = 0; k < inletConstants.size(); ++k)
 			{
-				if ((this->uVelocity->getYPoint(j) >= inlets[k].getStartingPoint().y) && (this->uVelocity->getYPoint(j) <= inlets[k].getEndPoint().y) && (inlets[k].getStartingPoint().x == 0))
+				if ((this->uVelocity->getYPoint(j) > inlets[k].getStartingPoint().y) && (this->uVelocity->getYPoint(j) < inlets[k].getEndPoint().y) && (inlets[k].getStartingPoint().x == 0))
 				{
 					double z = uVelocity->getYPoint(j) - inlets[k].getStartingPoint().y;
 					this->uVelocity->setData(inletConstants[k] * lambda(z, this->lengthY / 8), 0, j);
 				}
-				if ((this->uVelocity->getYPoint(j) >= inlets[k].getStartingPoint().y) && (uVelocity->getYPoint(j) <= inlets[k].getEndPoint().y) && (inlets[k].getStartingPoint().x == this->lengthX))
+				if ((this->uVelocity->getYPoint(j) > inlets[k].getStartingPoint().y) && (uVelocity->getYPoint(j) < inlets[k].getEndPoint().y) && (inlets[k].getStartingPoint().x == this->lengthX))
 				{
 					double z = this->uVelocity->getYPoint(j) - inlets[k].getStartingPoint().y;
 					this->uVelocity->setData(-inletConstants[k] * lambda(z, this->lengthY / 8), M, j);
 				}
 			}
 		}
+	}
+
+	template<typename T>
+	void setBoundaryConditionsV(T lambda, std::vector<double>& inletConstants, double t)
+	{
 
 		//the next two sets of loops set up the boundary conditions for v
 		for (int i = 0; i < this->M + 2; ++i)
@@ -132,7 +139,7 @@ public:
 
 			for (int k = 0; k < outlets.size(); ++k)
 			{
-				if ((this->vVelocity->getXPoint(i) >= outlets[k].getStartingPoint().x) && (this->vVelocity->getXPoint(i) <= outlets[k].getEndPoint().x) && outlets[k].getIsOpen())
+				if ((this->vVelocity->getXPoint(i) > outlets[k].getStartingPoint().x) && (this->vVelocity->getXPoint(i) < outlets[k].getEndPoint().x) && outlets[k].getIsOpen())
 				{
 					if (outlets[k].getStartingPoint().y == 0)
 					{
@@ -147,7 +154,7 @@ public:
 
 			for (int k = 0; k < inletConstants.size(); ++k)
 			{
-				if ((this->vVelocity->getXPoint(i) >= inlets[k].getStartingPoint().x) && (this->vVelocity->getXPoint(i) <= inlets[k].getEndPoint().x) && (inlets[k].getStartingPoint().y == 0))
+				if ((this->vVelocity->getXPoint(i) > inlets[k].getStartingPoint().x) && (this->vVelocity->getXPoint(i) < inlets[k].getEndPoint().x) && (inlets[k].getStartingPoint().y == 0))
 				{
 					double z = vVelocity->getXPoint(i) - inlets[k].getStartingPoint().x;
 					this->vVelocity->setData(inletConstants[k] * lambda(z, this->lengthX / 8), i, 0);
@@ -167,20 +174,24 @@ public:
 
 			for (int k = 0; k < inletConstants.size(); ++k)
 			{
-				
-				if ((this->vVelocity->getYPoint(j) >= inlets[k].getStartingPoint().y) && (this->vVelocity->getYPoint(j) <= inlets[k].getEndPoint().y) && (inlets[k].getStartingPoint().x == 0))
+
+				if ((this->vVelocity->getYPoint(j) > inlets[k].getStartingPoint().y) && (this->vVelocity->getYPoint(j) < inlets[k].getEndPoint().y) && (inlets[k].getStartingPoint().x == 0))
 				{
 					double z = vVelocity->getYPoint(j) - inlets[k].getStartingPoint().y;
 					this->vVelocity->setData(2 * (inletConstants[k] * lambda(z, this->lengthY / 8)) - this->vVelocity->getData(1, j), 0, j);
 				}
-				if ((this->vVelocity->getYPoint(j) >= inlets[k].getStartingPoint().y) && (vVelocity->getYPoint(j) <= inlets[k].getEndPoint().y) && (inlets[k].getStartingPoint().x == this->lengthX))
+				if ((this->vVelocity->getYPoint(j) > inlets[k].getStartingPoint().y) && (vVelocity->getYPoint(j) < inlets[k].getEndPoint().y) && (inlets[k].getStartingPoint().x == this->lengthX))
 				{
 					double z = this->vVelocity->getYPoint(j) - inlets[k].getStartingPoint().y;
 					this->vVelocity->setData(2 * (-inletConstants[k] * lambda(z, this->lengthY / 8)) - this->vVelocity->getData(M, j), M + 1, j);
 				}
 			}
 		}
+	}
 
+	template<typename T>
+	void setBoundaryConditionsY(T lambda, std::vector<double>& inletConstants, double t)
+	{
 		//the next two sets of loops set up the boundary conditions for Y
 		int fY;
 		if (std::fmod(t, 10) < 5)

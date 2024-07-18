@@ -49,16 +49,16 @@ void Mesh::testing()
 	vVelocity->testing();
 	//std::cout << "v2: \n";
 	//v2->testing();
-	std::cout << std::endl;
-	//std::cout << "Y: \n";
-	//Y->testing();
 	//std::cout << std::endl;
+	std::cout << "Y: \n";
+	Y->testing();
+	std::cout << std::endl;
 	//std::cout << "Y2: \n";
 	//Y2->testing();
 	//std::cout << std::endl;
-	std::cout << "pressure: \n";
-	pressure->testing();
-	std::cout << std::endl;
+	//std::cout << "pressure: \n";
+	//pressure->testing();
+	//std::cout << std::endl;
 	//std::cout << "pressure rhs: \n";
 	//pressureRightHandSide->testing();
 	//std::cout << std::endl;
@@ -94,8 +94,8 @@ double Mesh::solveDT(double CFL)
 		}
 	}
 
-	dtU = CFL * this->h / (2 * this->uVelocity->absoluteMax() + this->vVelocity->absoluteMax());
-	dtV = CFL * this->h / (2 * this->vVelocity->absoluteMax() + this->uVelocity->absoluteMax());
+	dtU = CFL * this->h / (2.0 * this->uVelocity->absoluteMax() + this->vVelocity->absoluteMax());
+	dtV = CFL * this->h / (2.0 * this->vVelocity->absoluteMax() + this->uVelocity->absoluteMax());
 	dtY = CFL * this->h / (this->absoluteMax(this->uHat) + this->absoluteMax(this->vHat));
 	dtPara = CFL * this->Re * std::pow(this->h, 2) / 4;
 	this->dt = this->min(this->min(dtU, dtV), this->min(dtY, dtPara));
@@ -177,6 +177,23 @@ void Mesh::correctVelocities()
 {
 	conservationMassCorrection();
 	solvePressure();
+
+	for (int j = 1; j < this->N + 1; ++j)
+	{
+		for (int i = 0; i < this->M + 1; ++i)
+		{
+			this->uVelocity->setData(this->uVelocity->getData(i, j) - this->dt * (this->pressure->getData(i + 1, j) - this->pressure->getData(i, j)) / this->h, i, j);
+		}
+	}
+
+	for (int j = 1; j < this->N + 1; ++j)
+	{
+		for (int i = 1; i < this->M + 1; ++i)
+		{
+			this->vVelocity->setData(this->vVelocity->getData(i, j) - this->dt * (this->pressure->getData(i, j + 1) - this->pressure->getData(i, j)) / this->h, i, j);
+		}
+	}
+
 }
 
 void Mesh::conservationMassCorrection()
