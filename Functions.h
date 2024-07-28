@@ -6,6 +6,8 @@ struct DataPoint
 {
     double x;
     double y;
+
+    DataPoint(double x, double y);
 };
 
 struct ServerAddress

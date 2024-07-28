@@ -1,10 +1,9 @@
 #include "Opening.h"
 #include <iostream>
 
-Opening::Opening(DataPoint startingPoint, DataPoint endPoint)
+Opening::Opening(DataPoint startingPoint, DataPoint endPoint) : startingPoint(startingPoint), endPoint(endPoint)
 {
-	this->startingPoint = startingPoint;
-	this->endPoint = endPoint;
+	
 }
 
 DataPoint Opening::getStartingPoint()
