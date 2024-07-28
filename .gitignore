@@ -1,4 +1,5 @@
 *.v*
 **/x64
 **/out
-**/build
+!/build
+/build/*
