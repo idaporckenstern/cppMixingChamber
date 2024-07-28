@@ -4,6 +4,7 @@
 #include <memory>
 #include "Opening.h"
 #include "Outlet.h"
+#include "WriteData.h"
 #include <iostream>
 #include <cmath>
 #include<iterator>
@@ -48,6 +49,9 @@ private:
 	//right hand side of the pressure equation
 	std::unique_ptr<DataVector> pressureRightHandSide;
 
+	//writing data
+	WriteData dataWriter;
+
 public:
 	Mesh(double M, double N, double lengthX, double lengthY, double Re, double Sc, double t, double tEnd, std::vector<Opening>& inlets, std::vector<Outlet>& outlets);
 	void testing();
@@ -60,18 +64,25 @@ public:
 	double getUData(int i, int j) { return this->uVelocity->getData(i, j); }
 	double getVData(int i, int j) { return this->vVelocity->getData(i, j); }
 	double getDT() { return this->dt; }
+	bool getDoPlot() { return this->doPlot; }
 	void setT(double t) { this->t = t; }
+	void setDT(double dt) { this->dt = dt; }
 	void setDoPlot(bool doPlot) { this->doPlot = doPlot; }
 
 	double solveDT(double CFL);
 	double absoluteMax(std::vector<std::vector<double>> &vector);
 	double min(double a, double b);
+
+	void writeTimes(double times[], int size);
+	void writeTimes(std::vector<double> times);
+	void writeData(double time);
 	
 
 	void stepForward();
 	void correctVelocities();
 	void conservationMassCorrection();
 	void solvePressure();
+	void solveR();
 	std::vector<std::vector<double>> poissonSolver(int maxIterations, double epsilon);
 	std::vector<std::vector<double>> multiGridSolver(std::vector<std::vector<double>> &phi, std::vector<std::vector<double>> &rightHandSide, double h);
 	std::vector<std::vector<double>> centerGS(std::vector<std::vector<double>> &phi, std::vector<std::vector<double>> &rightHandSide, double h, int numIterations);
@@ -80,6 +91,7 @@ public:
 	std::vector<std::vector<double>> centerProlongCells(std::vector<std::vector<double>> &vector);
 	std::vector<std::vector<double>> addVectors(std::vector<std::vector<double>> &vector1, std::vector<std::vector<double>> &vector2);
 	void setGSBoundaryConditions(std::vector<std::vector<double>> &phi);
+	void setOpeningIsOpen(int i, bool isOpen);
 
 	template<typename T>
 	void setBoundaryConditionsU(T lambda, std::vector<double>& inletConstants, double t)
@@ -87,15 +99,16 @@ public:
 		//the first two i and j loops set the boundary conditions for u
 		for (int i = 0; i < this->M + 1; ++i)
 		{
-			this->uVelocity->setData(-uVelocity->getData(i, 0), i, 1);
-			this->uVelocity->setData(-uVelocity->getData(i, this->N + 1), i, this->N);
+			this->uVelocity->setData(-uVelocity->getData(i, 1), i, 0);
+			this->uVelocity->setData(-uVelocity->getData(i, this->N), i, this->N + 1);
 
 			for (int k = 0; k < outlets.size(); ++k)
 			{
-				if ((this->uVelocity->getXPoint(i) >= outlets[k].getStartingPoint().x) && (this->uVelocity->getXPoint(i) <= outlets[k].getEndPoint().x) && outlets[k].getIsOpen())
+				if ((this->uVelocity->getXPoint(i) > outlets[k].getStartingPoint().x) && (this->uVelocity->getXPoint(i) < outlets[k].getEndPoint().x) && outlets[k].getIsOpen())
 				{
+					//std::cout << k << " is " << outlets[k].getIsOpen() << std::endl;
 					if (outlets[k].getStartingPoint().y == 0)
-					{
+					{	
 						this->uVelocity->setData(this->uVelocity->getData(i, 1), i, 0);
 					}
 					else

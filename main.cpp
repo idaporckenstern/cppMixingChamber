@@ -4,11 +4,12 @@
 #include "Functions.h"
 #include "Opening.h"
 #include "Outlet.h"
+#include "WriteData.h"
 #include <cmath>
-#include <cstdlib>
 
 int main()
 {
+
     double M = 16;
     double N = M;
     double lengthX = 4;
@@ -19,8 +20,12 @@ int main()
     double tEnd = 25;
     double CFL = 0.8;
 
-    int plotTimes[6] = { 2, 5, 10, 15, 20, 24 };
-
+    double plotTimes[6] = { 2, 5, 10, 15, 20, 24 };
+    //std::vector<double> plotTimes = linspace(0.0, tEnd, tEnd * 10);
+    //int size = plotTimes.size();
+    //int size = 6;
+    
+    
     auto lambda = [](double z, double L)
         {
             return 6 * z / L * (1 - z / L);
@@ -39,6 +44,9 @@ int main()
     });
 
     Mesh mesh = Mesh(M, N, lengthX, lengthY, Re, Sc, t, tEnd, inlets, outlets);
+    
+    
+    int plotCount = 1;
     
     if (mesh.getT() < 10 || std::fmod(mesh.getT() - 10, 6) < 3)
     {
@@ -62,14 +70,17 @@ int main()
     mesh.setBoundaryConditionsV(lambda, inletConditions, mesh.getT());
     mesh.setBoundaryConditionsY(lambda, inletConditions, mesh.getT());
 
-    
-    int plotCount = 0;
+    //mesh.writeTimes(plotTimes);
+    mesh.solveR();
+    //mesh.writeData(0.0);
+
+
     while (mesh.getT() < mesh.getTEnd())
     {
-        double dt = mesh.solveDT(CFL);
-        if ((mesh.getT() < plotTimes[plotCount]) && (mesh.getT() + dt > plotTimes[plotCount]))
+        mesh.setDT(mesh.solveDT(CFL));
+        if ((mesh.getT() < plotTimes[plotCount]) && (mesh.getT() + mesh.getDT() > plotTimes[plotCount]))
         {
-            dt = plotTimes[plotCount] - mesh.getT();
+            mesh.setDT(plotTimes[plotCount] - mesh.getT());
             ++plotCount;
             mesh.setDoPlot(true);
         }
@@ -79,35 +90,47 @@ int main()
         //check if outlets are open or closed
         if (mesh.getT() < 10 || std::fmod(mesh.getT() - 10, 6) < 3)
         {
-            outlets[0].setOpening(true);
+            mesh.setOpeningIsOpen(0, true);
         }
         else
         {
-            outlets[0].setOpening(false);
+            mesh.setOpeningIsOpen(0, false);
         }
 
         if (mesh.getT() < 10 || std::fmod(mesh.getT() - 10, 6) >= 3)
         {
-            outlets[1].setOpening(true);
+            mesh.setOpeningIsOpen(1, true);
         }
         else
         {
-            outlets[1].setOpening(false);
+            mesh.setOpeningIsOpen(1, false);
         }
+        //std::cout << "outlet 1: " << outlets[0].getIsOpen() << std::endl; 
+        //std::cout << "outlet 2: " << outlets[1].getIsOpen() << std::endl;
 
-        mesh.setBoundaryConditionsU(lambda, inletConditions, mesh.getT() + dt);
-        mesh.setBoundaryConditionsV(lambda, inletConditions, mesh.getT() + dt);
-        mesh.setBoundaryConditionsY(lambda, inletConditions, mesh.getT() + dt);
+        mesh.setBoundaryConditionsU(lambda, inletConditions, mesh.getT() + mesh.getDT());
+        mesh.setBoundaryConditionsV(lambda, inletConditions, mesh.getT() + mesh.getDT());
+        mesh.setBoundaryConditionsY(lambda, inletConditions, mesh.getT() + mesh.getDT());
         mesh.correctVelocities();
         mesh.setBoundaryConditionsU(lambda, inletConditions, mesh.getT());
         mesh.setBoundaryConditionsV(lambda, inletConditions, mesh.getT());
-        mesh.setT(mesh.getT() + dt);
-        std::cout << mesh.getT() << std::endl;
+
+        if (mesh.getDoPlot())
+        {
+            mesh.solveR();
+            //mesh.writeData(plotTimes[plotCount - 1]);
+            mesh.setDoPlot(false);
+        }
+
+        mesh.setT(mesh.getT() + mesh.getDT());
+        //mesh.testing();
+        //std::cout << mesh.getT() << std::endl; 
+        std::cout << mesh.getDT() << std::endl;
+
         
     }
 
     mesh.testing();
-    
     
 }
 

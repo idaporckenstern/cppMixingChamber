@@ -1,10 +1,17 @@
 #pragma once
 #include <vector>
+#include <string>
 
 struct DataPoint
 {
     double x;
     double y;
+};
+
+struct ServerAddress
+{
+    std::string ipAddress;
+    int port;
 };
 
 template<typename T>

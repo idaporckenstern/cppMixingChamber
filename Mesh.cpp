@@ -11,7 +11,7 @@ Mesh::Mesh(double M, double N, double lengthX, double lengthY, double Re, double
 	pressure(std::make_unique<DataVector>(linspace(0 - h / 2, lengthX + h / 2, M + 2), linspace(0.0 - h / 2.0, lengthY + h / 2.0, N + 2))),
 	R(std::make_unique<DataVector>(linspace(0 - h / 2, lengthX + h / 2, M + 2), linspace(0.0 - h / 2.0, lengthY + h / 2.0, N + 2))),
 	pressureRightHandSide(std::make_unique<DataVector>(linspace(0 - h / 2, lengthX + h / 2, M + 2), linspace(0.0 - h / 2.0, lengthY + h / 2.0, N + 2))),
-	inlets(inlets), outlets(outlets)
+	inlets(inlets), outlets(outlets), dataWriter(WriteData())
 
 {
 	uVelocity->initDataVector();
@@ -129,6 +129,24 @@ double Mesh::min(double a, double b)
 	return b;
 }
 
+void Mesh::writeTimes(double times[], int size)
+{
+	this->dataWriter.WriteTimes(times, size);
+}
+
+void Mesh::writeTimes(std::vector<double> times)
+{
+	this->dataWriter.WriteTimes(times);
+}
+
+void Mesh::writeData(double time)
+{
+	this->dataWriter.Write(this->uVelocity->getData(), time, "u");
+	this->dataWriter.Write(this->vVelocity->getData(), time, "v");
+	this->dataWriter.Write(this->Y->getData(), time, "Y");
+	this->dataWriter.Write(this->R->getData(), time, "R");
+}
+
 void Mesh::stepForward()
 {
 	//solving for u^n+1
@@ -243,6 +261,17 @@ void Mesh::solvePressure()
 
 	this->pressure->replaceDataVector(this->poissonSolver(100, 0.0000000001));
 
+}
+
+void Mesh::solveR()
+{
+	for (int i = 0; i < this->M + 2; ++i)
+	{
+		for (int j = 0; j < this->N + 2; ++j)
+		{
+			R->setData(Y->getData(i, j) * (1 - Y->getData(i, j)), i, j);
+		}
+	}
 }
 
 std::vector<std::vector<double>> Mesh::poissonSolver(int maxIterations, double epsilon)
@@ -423,4 +452,9 @@ void Mesh::setGSBoundaryConditions(std::vector<std::vector<double>> &phi)
 		phi[i][0] = phi[i][1];
 		phi[i][N + 1] = phi[i][N];
 	}
+}
+
+void Mesh::setOpeningIsOpen(int i, bool isOpen)
+{
+	this->outlets[i].setOpening(isOpen);
 }
