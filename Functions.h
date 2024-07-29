@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <string>
+#include <iostream>
 
 struct DataPoint
 {
@@ -15,6 +16,20 @@ struct ServerAddress
     std::string ipAddress;
     int port;
 };
+
+enum class FileType
+{
+    uAnimation,
+    uPlot,
+    vAnimation,
+    vPlot,
+    YAnimation,
+    YPlot,
+    RAnimation,
+    RPlot,
+};
+
+std::string fileTypeToString(FileType fileType);
 
 template<typename T>
 std::vector<double> linspace(T start_in, T end_in, int num_in)

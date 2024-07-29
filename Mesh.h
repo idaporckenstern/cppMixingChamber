@@ -24,6 +24,7 @@ private:
 	double Re;
 	double Sc;
 	bool doPlot = false;
+	bool doAnimation = false;
 
 	//inlets and outlets
 	std::vector<Opening> inlets;
@@ -65,17 +66,19 @@ public:
 	double getVData(int i, int j) { return this->vVelocity->getData(i, j); }
 	double getDT() { return this->dt; }
 	bool getDoPlot() { return this->doPlot; }
+	bool getDoAnimation() { return this->doAnimation; }
 	void setT(double t) { this->t = t; }
 	void setDT(double dt) { this->dt = dt; }
 	void setDoPlot(bool doPlot) { this->doPlot = doPlot; }
+	void setDoAnimation(bool doAnimation) { this->doAnimation = doAnimation; }
 
 	double solveDT(double CFL);
 	double absoluteMax(std::vector<std::vector<double>> &vector);
 	double min(double a, double b);
 
-	void writeTimes(double times[], int size);
-	void writeTimes(std::vector<double> times);
-	void writeData(double time);
+	void writeTimeJSON(double plotTimes[], int plotTimesSize, std::vector<double> animationTimes);
+	void writeDataJSON(FileType fileType);
+	void closeFiles();
 	
 
 	void stepForward();

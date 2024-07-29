@@ -21,9 +21,8 @@ int main()
     double CFL = 0.8;
 
     double plotTimes[6] = { 2, 5, 10, 15, 20, 24 };
-    //std::vector<double> plotTimes = linspace(0.0, tEnd, tEnd * 10);
-    //int size = plotTimes.size();
-    //int size = 6;
+    std::vector<double> animationTimes = linspace(0.0, tEnd, tEnd * 10);
+    int plotSize = 6;
     
     
     auto lambda = [](double z, double L)
@@ -46,42 +45,38 @@ int main()
     Mesh mesh = Mesh(M, N, lengthX, lengthY, Re, Sc, t, tEnd, inlets, outlets);
     
     
-    int plotCount = 1;
-    
-    if (mesh.getT() < 10 || std::fmod(mesh.getT() - 10, 6) < 3)
-    {
-        outlets[0].setOpening(true);
-    }
-    else
-    {
-        outlets[0].setOpening(false);
-    }
-
-    if (mesh.getT() < 10 || std::fmod(mesh.getT() - 10, 6) >= 3)
-    {
-        outlets[1].setOpening(true);
-    }
-    else
-    {
-        outlets[1].setOpening(false);
-    }
+    int animationCount = 1;
+    int plotCount = 0;
 
     mesh.setBoundaryConditionsU(lambda, inletConditions, mesh.getT());
     mesh.setBoundaryConditionsV(lambda, inletConditions, mesh.getT());
     mesh.setBoundaryConditionsY(lambda, inletConditions, mesh.getT());
 
-    //mesh.writeTimes(plotTimes);
     mesh.solveR();
-    //mesh.writeData(0.0);
+
+    mesh.writeTimeJSON(plotTimes, plotSize, animationTimes);
+    mesh.writeDataJSON(FileType::uAnimation);
 
 
     while (mesh.getT() < mesh.getTEnd())
     {
         mesh.setDT(mesh.solveDT(CFL));
-        if ((mesh.getT() < plotTimes[plotCount]) && (mesh.getT() + mesh.getDT() > plotTimes[plotCount]))
+        if ((mesh.getT() < animationTimes[animationCount]) && (mesh.getT() + mesh.getDT() > animationTimes[animationCount]))
         {
-            mesh.setDT(plotTimes[plotCount] - mesh.getT());
-            ++plotCount;
+            
+            if ((mesh.getT() < plotTimes[plotCount]) && (mesh.getT() + mesh.getDT() > plotTimes[plotCount]))
+            {
+                mesh.setDT(plotTimes[plotCount] - mesh.getT());
+                mesh.setDoPlot(true);
+                ++plotCount;
+            }
+            else
+            {
+                mesh.setDT(animationTimes[animationCount] - mesh.getT());
+                mesh.setDoAnimation(true);
+                ++animationCount;
+            }
+            
             mesh.setDoPlot(true);
         }
 
@@ -105,8 +100,6 @@ int main()
         {
             mesh.setOpeningIsOpen(1, false);
         }
-        //std::cout << "outlet 1: " << outlets[0].getIsOpen() << std::endl; 
-        //std::cout << "outlet 2: " << outlets[1].getIsOpen() << std::endl;
 
         mesh.setBoundaryConditionsU(lambda, inletConditions, mesh.getT() + mesh.getDT());
         mesh.setBoundaryConditionsV(lambda, inletConditions, mesh.getT() + mesh.getDT());
@@ -118,18 +111,25 @@ int main()
         if (mesh.getDoPlot())
         {
             mesh.solveR();
-            //mesh.writeData(plotTimes[plotCount - 1]);
+            mesh.writeDataJSON(FileType::uPlot);
             mesh.setDoPlot(false);
+        }
+        if (mesh.getDoAnimation())
+        {
+            mesh.solveR();
+            mesh.writeDataJSON(FileType::uAnimation);
+            mesh.setDoAnimation(false);
         }
 
         mesh.setT(mesh.getT() + mesh.getDT());
         //mesh.testing();
-        //std::cout << mesh.getT() << std::endl; 
-        std::cout << mesh.getDT() << std::endl;
+        std::cout << mesh.getT() << std::endl; 
+        //std::cout << mesh.getDT() << std::endl;
 
         
     }
 
+    mesh.closeFiles();
     mesh.testing();
     
 }

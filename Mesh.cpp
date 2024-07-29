@@ -129,22 +129,38 @@ double Mesh::min(double a, double b)
 	return b;
 }
 
-void Mesh::writeTimes(double times[], int size)
+void Mesh::writeTimeJSON(double plotTimes[], int plotTimesSize, std::vector<double> animationTimes)
 {
-	this->dataWriter.WriteTimes(times, size);
+	this->dataWriter.writeTimeJSON(plotTimes, plotTimesSize, animationTimes);
 }
 
-void Mesh::writeTimes(std::vector<double> times)
+void Mesh::writeDataJSON(FileType fileType)
 {
-	this->dataWriter.WriteTimes(times);
+	if (
+		fileType == FileType::uPlot ||
+		fileType == FileType::vPlot ||
+		fileType == FileType::YPlot ||
+		fileType == FileType::RPlot
+		)
+	{
+		this->dataWriter.writeDataJSON(this->uVelocity->getData(), FileType::uPlot);
+		this->dataWriter.writeDataJSON(this->vVelocity->getData(), FileType::vPlot);
+		this->dataWriter.writeDataJSON(this->Y->getData(), FileType::YPlot);
+		this->dataWriter.writeDataJSON(this->R->getData(), FileType::RPlot);
+	}
+	else
+	{
+		this->dataWriter.writeDataJSON(this->uVelocity->getData(), FileType::uAnimation);
+		this->dataWriter.writeDataJSON(this->vVelocity->getData(), FileType::vAnimation);
+		this->dataWriter.writeDataJSON(this->Y->getData(), FileType::YAnimation);
+		this->dataWriter.writeDataJSON(this->R->getData(), FileType::RAnimation);
+	}
+
 }
 
-void Mesh::writeData(double time)
+void Mesh::closeFiles()
 {
-	this->dataWriter.Write(this->uVelocity->getData(), time, "u");
-	this->dataWriter.Write(this->vVelocity->getData(), time, "v");
-	this->dataWriter.Write(this->Y->getData(), time, "Y");
-	this->dataWriter.Write(this->R->getData(), time, "R");
+	this->dataWriter.closeFiles();
 }
 
 void Mesh::stepForward()
