@@ -247,12 +247,10 @@ public:
 
 				if ((this->Y->getYPoint(j) >= inlets[k].getStartingPoint().y) && (this->Y->getYPoint(j) <= inlets[k].getEndPoint().y) && (inlets[k].getStartingPoint().x == 0))
 				{
-					double z = Y->getYPoint(j) - inlets[k].getStartingPoint().y;
 					this->Y->setData(2 * fY - this->Y->getData(1, j), 0, j);
 				}
 				if ((this->Y->getYPoint(j) >= inlets[k].getStartingPoint().y) && (Y->getYPoint(j) <= inlets[k].getEndPoint().y) && (inlets[k].getStartingPoint().x == this->lengthX))
 				{
-					double z = this->Y->getYPoint(j) - inlets[k].getStartingPoint().y;
 					this->Y->setData(2 * fY - this->Y->getData(M, j), M + 1, j);
 				}
 			}
