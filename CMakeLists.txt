@@ -8,7 +8,7 @@ set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
 #set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR})
 
 add_library(data_vector STATIC DataVector.cpp)
-add_library(functions STATIC functions.cpp)
+add_library(functions STATIC Functions.cpp)
 add_library(mesh STATIC Mesh.cpp)
 add_library(opening STATIC Opening.cpp)
 add_library(outlet STATIC Outlet.cpp)
